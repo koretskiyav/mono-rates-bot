@@ -2,17 +2,20 @@ import TelegramBot, { Update } from 'node-telegram-bot-api';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { AppConfig } from 'src/config';
+import { AppConfig } from '../config';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class BotService {
-  constructor(private configService: ConfigService<AppConfig, true>) {}
-  private readonly logger = new Logger(BotService.name);
+  constructor(
+    private configService: ConfigService<AppConfig, true>,
+    private usersService: UsersService,
+  ) {
+    this.init();
+  }
 
-  private readonly bot = createBot(
-    this.configService.get('tgToken'),
-    this.configService.get('appUrl'),
-  );
+  private readonly logger = new Logger(BotService.name);
+  private readonly bot = new TelegramBot(this.configService.get('tgToken'));
 
   handleMessage(message: Update) {
     this.logger.debug(
@@ -20,20 +23,60 @@ export class BotService {
     );
     this.bot.processUpdate(message);
   }
-}
 
-function createBot(token: string, appUrl: string) {
-  const bot = new TelegramBot(token);
-
-  bot.setWebHook(`${appUrl}/bot`);
-
-  bot.setMyCommands([{ command: '/start', description: 'Start' }]);
-
-  bot.onText(/\/start/, handleStart);
-
-  async function handleStart(msg: TelegramBot.Message) {
-    bot.sendMessage(msg.chat.id, 'Welcome back!');
+  private init() {
+    this.bot.setWebHook(`${this.configService.get('appUrl')}/bot`);
+    this.bot.setMyCommands([
+      { command: '/start', description: 'Start' },
+      { command: '/subscribe', description: 'Subscribe' },
+      { command: '/unsubscribe', description: 'Unsubscribe' },
+    ]);
+    this.bot.onText(/\/start/, this.handleStart);
+    this.bot.onText(/\/subscribe/, this.handleSubscribe);
+    this.bot.onText(/\/unsubscribe/, this.handleUnsubscribe);
   }
 
-  return bot;
+  private handleStart = async (msg: TelegramBot.Message) => {
+    const chatId = msg.chat.id;
+    try {
+      if (!(await this.usersService.findByChatId(chatId))) {
+        this.usersService.create(chatId);
+      }
+      this.bot.sendMessage(chatId, 'Welcome!!!');
+    } catch (err) {
+      this.logger.error(err);
+    }
+  };
+
+  private handleSubscribe = async (msg: TelegramBot.Message) => {
+    const chatId = msg.chat.id;
+    try {
+      const user = await this.usersService.findByChatId(chatId);
+      if (user) {
+        user.subscribed = true;
+        await user.save();
+        this.bot.sendMessage(chatId, 'Subscribed!');
+      } else {
+        this.bot.sendMessage(chatId, 'Not Found!');
+      }
+    } catch (err) {
+      this.logger.error(err);
+    }
+  };
+
+  private handleUnsubscribe = async (msg: TelegramBot.Message) => {
+    const chatId = msg.chat.id;
+    try {
+      const user = await this.usersService.findByChatId(chatId);
+      if (user) {
+        user.subscribed = false;
+        await user.save();
+        this.bot.sendMessage(chatId, 'Unsubscribed!');
+      } else {
+        this.bot.sendMessage(chatId, 'Not Found!');
+      }
+    } catch (err) {
+      this.logger.error(err);
+    }
+  };
 }
