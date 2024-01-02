@@ -9,16 +9,7 @@ import {
 
 @Table({ tableName: 'users' })
 export class User extends Model {
-  @AutoIncrement
-  @Unique
-  @PrimaryKey
-  @Column
-  id!: number;
-
-  @Unique
-  @Column
-  chatId!: number;
-
-  @Column
-  subscribed: boolean = false;
+  @AutoIncrement @Unique @PrimaryKey @Column id!: number;
+  @Unique @Column chatId!: number;
+  @Column subscribed: boolean = false;
 }

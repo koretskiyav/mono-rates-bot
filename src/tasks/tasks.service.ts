@@ -1,26 +1,35 @@
-import { isEqual } from 'lodash';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { Currency } from 'src/mono/interfaces/currency.interface';
-import { MonoService } from 'src/mono/mono.service';
+import { MonoService } from '../mono/mono.service';
+import { RatesService } from '../rates/rates.service';
+
+import { RateDto } from 'src/rates/dto/rate.dto';
 
 @Injectable()
 export class TasksService {
-  constructor(private monoService: MonoService) {}
+  constructor(
+    private monoService: MonoService,
+    private ratesService: RatesService,
+  ) {}
   private readonly logger = new Logger(TasksService.name);
-
-  lastRates: Currency | undefined;
 
   @Cron('0 */10 * * * *')
   async handleCron() {
     try {
-      const pair = await this.monoService.getRates();
+      const [pair, last] = await Promise.all([
+        this.monoService.getRates(),
+        this.ratesService.getLast(),
+      ]);
       if (!pair) return this.logger.warn('No data received');
 
-      if (this.lastRates && isEqual(this.lastRates, pair)) {
+      if (
+        last &&
+        last.rateBuy === pair.rateBuy &&
+        last.rateSell === pair.rateSell
+      ) {
         this.logger.debug('Rates have not changed.');
       } else {
-        this.lastRates = pair;
+        await this.ratesService.add(pair);
         this.logger.log(pairToText(pair));
       }
     } catch (err) {
@@ -42,9 +51,7 @@ function formatDateTime(timestamp: number) {
   return new Date(timestamp).toLocaleString('en-GB', options);
 }
 
-function pairToText(data: Currency) {
-  const { date: unixSec, rateBuy, rateSell } = data;
-  const date = formatDateTime(unixSec * 1000);
-
-  return `Rates changed at ${date} to ${rateBuy}/${rateSell}`;
+function pairToText(data: RateDto) {
+  const { date, rateBuy, rateSell } = data;
+  return `Rates changed at ${formatDateTime(date)} to ${rateBuy}/${rateSell}`;
 }

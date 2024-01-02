@@ -21,6 +21,7 @@ export class MonoService {
         (el) => el.currencyCodeA === currA && el.currencyCodeB === currB,
       );
       if (!pair) throw new Error(`Pair ${currA}/${currB} nor found.`);
+      pair.date = pair.date * 1000;
       return pair;
     } catch (err) {
       this.logger.error(err);

@@ -9,8 +9,9 @@ import { BotModule } from './bot/bot.module';
 import { MonoModule } from './mono/mono.module';
 
 import { config } from './config';
-import { UsersModule } from './users/users.module';
 import { DbModule } from './db/db.module';
+import { UsersModule } from './users/users.module';
+import { RatesModule } from './rates/rates.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { DbModule } from './db/db.module';
     TasksModule,
     BotModule,
     UsersModule,
+    RatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
