@@ -9,5 +9,6 @@ import { UsersModule } from '../users/users.module';
   imports: [ConfigModule, UsersModule],
   controllers: [BotController],
   providers: [BotService],
+  exports: [BotService],
 })
 export class BotModule {}

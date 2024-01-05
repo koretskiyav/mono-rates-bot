@@ -5,6 +5,15 @@ import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../config';
 import { UsersService } from '../users/users.service';
 
+import { RateDto } from '../rates/dto/rate.dto';
+
+import { sleep } from '../utils/sleep';
+import {
+  formatDateTime,
+  formatMoney,
+  formatPercent,
+} from '../utils/formatters';
+
 @Injectable()
 export class BotService {
   constructor(
@@ -22,6 +31,23 @@ export class BotService {
       `Received message "${message.message?.text}" from user "${message.message?.from?.username}"`,
     );
     this.bot.processUpdate(message);
+  }
+
+  async notifyRatesChanged(
+    chatIds: number[],
+    rate: RateDto,
+    prevRate: RateDto,
+  ) {
+    for (const chatId of chatIds) {
+      this.bot.sendMessage(
+        chatId,
+        await this.createChangesMessage(rate, prevRate),
+        {
+          parse_mode: 'HTML',
+        },
+      );
+      await sleep(100); // tg broadcast limitation
+    }
   }
 
   private init() {
@@ -79,4 +105,31 @@ export class BotService {
       this.logger.error(err);
     }
   };
+
+  private async createChangesMessage(rate: RateDto, prev: RateDto) {
+    const { date, rateBuy, rateSell } = rate;
+
+    const dateFormatted = formatDateTime(date);
+    const buyChange = rateBuy - prev.rateBuy;
+    const sellChange = rateSell - prev.rateSell;
+    const spread = 1 - rateBuy / rateSell;
+    const prevSpread = 1 - prev.rateBuy / prev.rateSell;
+    const spreadChange = spread - prevSpread;
+
+    const getSign = (val: number) => (val === 0 ? '⚪️' : val > 0 ? '🔴' : '🟢');
+
+    return `<u><b>${dateFormatted}</b></u>:
+
+    buy <b>${formatMoney(rateBuy)}</b> ${getSign(buyChange)} ${formatMoney(
+      buyChange,
+      true,
+    )}
+    sell <b>${formatMoney(rateSell)}</b> ${getSign(sellChange)} ${formatMoney(
+      sellChange,
+      true,
+    )}
+    spread <b>${formatPercent(spread)}</b> ${getSign(
+      spreadChange,
+    )} ${formatPercent(spreadChange, true)}`;
+  }
 }

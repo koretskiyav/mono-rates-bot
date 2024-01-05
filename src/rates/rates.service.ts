@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { Rate } from './rates.model';
 import { InjectModel } from '@nestjs/sequelize';
 import { RateDto } from './dto/rate.dto';
+import { dumpRate } from './dump/dump.rate';
 
 @Injectable()
 export class RatesService {
@@ -12,10 +13,14 @@ export class RatesService {
   ) {}
 
   async add(rate: RateDto) {
-    return this.rateModel.create(rate);
+    return dumpRate(await this.rateModel.create(rate));
   }
 
-  async getLast() {
-    return this.rateModel.findOne({ order: [['date', 'DESC']] });
+  async getLast(offset = 0) {
+    const rate = await this.rateModel.findOne({
+      offset,
+      order: [['date', 'DESC']],
+    });
+    return rate && dumpRate(rate);
   }
 }

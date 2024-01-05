@@ -35,4 +35,8 @@ export class UsersService {
     user.subscribed = false;
     return user.save();
   }
+
+  async getSubscribed() {
+    return this.userModel.findAll({ where: { subscribed: true } });
+  }
 }
