@@ -20,6 +20,7 @@ const dateOptions: Intl.DateTimeFormatOptions = {
   day: 'numeric',
   hour: 'numeric',
   minute: 'numeric',
+  timeZone: 'Europe/Kiev',
 };
 
 export function formatDateTime(timestamp: number) {
