@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { AppConfig } from '../config';
 import { UsersService } from '../users/users.service';
+import { RatesService } from '../rates/rates.service';
 
 import { RateDto } from '../rates/dto/rate.dto';
 
@@ -13,12 +14,18 @@ import {
   formatMoney,
   formatPercent,
 } from '../utils/formatters';
+import {
+  SUBSCRIBE_MESSAGE,
+  UNSUBSCRIBE_MESSAGE,
+  WELCOME_MESSAGE,
+} from './messages';
 
 @Injectable()
 export class BotService {
   constructor(
     private configService: ConfigService<AppConfig, true>,
     private usersService: UsersService,
+    private ratesService: RatesService,
   ) {
     this.init();
   }
@@ -42,9 +49,7 @@ export class BotService {
       this.bot.sendMessage(
         chatId,
         await this.createChangesMessage(rate, prevRate),
-        {
-          parse_mode: 'HTML',
-        },
+        { parse_mode: 'HTML' },
       );
       await sleep(100); // tg broadcast limitation
     }
@@ -54,8 +59,11 @@ export class BotService {
     this.bot.setWebHook(`${this.configService.get('appUrl')}/bot`);
     this.bot.setMyCommands([
       { command: '/start', description: 'Start' },
-      { command: '/subscribe', description: 'Subscribe' },
-      { command: '/unsubscribe', description: 'Unsubscribe' },
+      { command: '/subscribe', description: 'Subscribe for rates updates' },
+      {
+        command: '/unsubscribe',
+        description: 'Unsubscribe from rates updates',
+      },
     ]);
     this.bot.onText(/\/start/, this.handleStart);
     this.bot.onText(/\/subscribe/, this.handleSubscribe);
@@ -68,7 +76,7 @@ export class BotService {
       if (!(await this.usersService.findByChatId(chatId))) {
         this.usersService.create(chatId);
       }
-      this.bot.sendMessage(chatId, 'Welcome!!!');
+      this.bot.sendMessage(chatId, WELCOME_MESSAGE);
     } catch (err) {
       this.logger.error(err);
     }
@@ -81,9 +89,17 @@ export class BotService {
       if (user) {
         user.subscribed = true;
         await user.save();
-        this.bot.sendMessage(chatId, 'Subscribed!');
+        await this.bot.sendMessage(chatId, SUBSCRIBE_MESSAGE, {
+          parse_mode: 'HTML',
+        });
+        const last = await this.ratesService.getLast();
+        const beforeLast = await this.ratesService.getLast(1);
+
+        if (last) {
+          this.notifyRatesChanged([chatId], last, beforeLast || last);
+        }
       } else {
-        this.bot.sendMessage(chatId, 'Not Found!');
+        await this.bot.sendMessage(chatId, 'Not Found!');
       }
     } catch (err) {
       this.logger.error(err);
@@ -97,7 +113,7 @@ export class BotService {
       if (user) {
         user.subscribed = false;
         await user.save();
-        this.bot.sendMessage(chatId, 'Unsubscribed!');
+        this.bot.sendMessage(chatId, UNSUBSCRIBE_MESSAGE);
       } else {
         this.bot.sendMessage(chatId, 'Not Found!');
       }
