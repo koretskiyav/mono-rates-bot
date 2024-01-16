@@ -116,20 +116,16 @@ export class BotService {
     const prevSpread = 1 - prev.rateBuy / prev.rateSell;
     const spreadChange = spread - prevSpread;
 
-    const getSign = (val: number) => (val === 0 ? '⚪️' : val > 0 ? '🔴' : '🟢');
+    const getSign = (val: number) => (val === 0 ? '⇨' : val > 0 ? '⇧' : '⇩');
 
-    return `<u><b>${dateFormatted}</b></u>:
-
-    buy <b>${formatMoney(rateBuy)}</b> ${getSign(buyChange)} ${formatMoney(
-      buyChange,
-      true,
-    )}
-    sell <b>${formatMoney(rateSell)}</b> ${getSign(sellChange)} ${formatMoney(
+    return `${dateFormatted}
+<b>${formatMoney(rateBuy)} ◦ ${formatMoney(rateSell)}   (${formatPercent(
+      spread,
+    )})</b>
+${getSign(buyChange)}${formatMoney(buyChange)}◦${getSign(
       sellChange,
-      true,
-    )}
-    spread <b>${formatPercent(spread)}</b> ${getSign(
+    )}${formatMoney(sellChange)}(${getSign(spreadChange)}${formatPercent(
       spreadChange,
-    )} ${formatPercent(spreadChange, true)}`;
+    )})`;
   }
 }

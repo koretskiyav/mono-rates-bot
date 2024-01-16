@@ -1,21 +1,20 @@
-const buildNumberFormatter = (style: string, showSign: boolean) =>
+const buildNumberFormatter = (style: string) =>
   new Intl.NumberFormat('uk', {
     style,
-    signDisplay: showSign ? 'always' : 'auto',
+    signDisplay: 'never',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-export function formatMoney(value: number, showSign = false) {
-  return buildNumberFormatter('decimal', showSign).format(value);
+export function formatMoney(value: number) {
+  return buildNumberFormatter('decimal').format(value);
 }
 
-export function formatPercent(value: number, showSign = false) {
-  return buildNumberFormatter('percent', showSign).format(value);
+export function formatPercent(value: number) {
+  return buildNumberFormatter('percent').format(value);
 }
 
 const dateOptions: Intl.DateTimeFormatOptions = {
-  year: 'numeric',
   month: 'numeric',
   day: 'numeric',
   hour: 'numeric',
