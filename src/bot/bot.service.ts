@@ -128,8 +128,8 @@ export class BotService {
     const dateFormatted = formatDateTime(date);
     const buyChange = rateBuy - prev.rateBuy;
     const sellChange = rateSell - prev.rateSell;
-    const spread = 1 - rateBuy / rateSell;
-    const prevSpread = 1 - prev.rateBuy / prev.rateSell;
+    const spread = rateSell / rateBuy - 1;
+    const prevSpread = prev.rateSell / prev.rateBuy - 1;
     const spreadChange = spread - prevSpread;
 
     const getSign = (val: number) => (val === 0 ? '⇨' : val > 0 ? '⇧' : '⇩');
