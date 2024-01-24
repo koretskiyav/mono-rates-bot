@@ -8,7 +8,6 @@ export const config = () => ({
     username: process.env.POSTGRES_USER || '',
     password: process.env.POSTGRES_PASSWORD || '',
     database: process.env.POSTGRES_DATABASE || '',
-    dialectOptions: { ssl: true },
     synchronize: true,
     autoLoadModels: true,
   },

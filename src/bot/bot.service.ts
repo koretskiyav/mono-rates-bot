@@ -56,7 +56,9 @@ export class BotService {
   }
 
   private init() {
-    this.bot.setWebHook(`${this.configService.get('appUrl')}/bot`);
+    const webHookUrl = `${this.configService.get('appUrl')}/bot`;
+    this.bot.setWebHook(webHookUrl);
+    this.logger.debug(`Bot WebHook ready on "${webHookUrl}"`);
     this.bot.setMyCommands([
       { command: '/start', description: 'Start' },
       { command: '/subscribe', description: 'Subscribe for rates updates' },
