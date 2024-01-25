@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: node:20-alpine
+    steps:
+      - name: checkout master
+        uses: actions/checkout@v2
+
+      - name: lint
+        run: npm run lint
+
+      - name: test
+        run: npm run test
