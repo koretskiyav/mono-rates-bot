@@ -7,6 +7,7 @@ import { UsersService } from '../users/users.service';
 import { RatesService } from '../rates/rates.service';
 
 import { RateDto } from '../rates/dto/rate.dto';
+import { UserDto } from '../users/dto/user.dto';
 
 import { sleep } from '../utils/sleep';
 import {
@@ -73,35 +74,27 @@ export class BotService {
   }
 
   private handleStart = async (msg: TelegramBot.Message) => {
-    const chatId = msg.chat.id;
     try {
-      if (!(await this.usersService.findByChatId(chatId))) {
-        this.usersService.create(chatId);
-      }
-      this.bot.sendMessage(chatId, WELCOME_MESSAGE);
+      const user = await this.usersService.getOrCreate(this.buildUser(msg));
+      this.bot.sendMessage(user.chatId, WELCOME_MESSAGE);
     } catch (err) {
       this.logger.error(err);
     }
   };
 
   private handleSubscribe = async (msg: TelegramBot.Message) => {
-    const chatId = msg.chat.id;
     try {
-      const user = await this.usersService.findByChatId(chatId);
-      if (user) {
-        user.subscribed = true;
-        await user.save();
-        await this.bot.sendMessage(chatId, SUBSCRIBE_MESSAGE, {
-          parse_mode: 'HTML',
-        });
-        const last = await this.ratesService.getLast();
-        const beforeLast = await this.ratesService.getLast(1);
+      const user = await this.usersService.getOrCreate(this.buildUser(msg));
+      user.subscribed = true;
+      await user.save();
+      await this.bot.sendMessage(user.chatId, SUBSCRIBE_MESSAGE, {
+        parse_mode: 'HTML',
+      });
+      const last = await this.ratesService.getLast();
+      const beforeLast = await this.ratesService.getLast(1);
 
-        if (last) {
-          this.notifyRatesChanged([chatId], last, beforeLast || last);
-        }
-      } else {
-        await this.bot.sendMessage(chatId, 'Not Found!');
+      if (last) {
+        this.notifyRatesChanged([user.chatId], last, beforeLast || last);
       }
     } catch (err) {
       this.logger.error(err);
@@ -109,16 +102,11 @@ export class BotService {
   };
 
   private handleUnsubscribe = async (msg: TelegramBot.Message) => {
-    const chatId = msg.chat.id;
     try {
-      const user = await this.usersService.findByChatId(chatId);
-      if (user) {
-        user.subscribed = false;
-        await user.save();
-        this.bot.sendMessage(chatId, UNSUBSCRIBE_MESSAGE);
-      } else {
-        this.bot.sendMessage(chatId, 'Not Found!');
-      }
+      const user = await this.usersService.getOrCreate(this.buildUser(msg));
+      user.subscribed = false;
+      await user.save();
+      this.bot.sendMessage(user.chatId, UNSUBSCRIBE_MESSAGE);
     } catch (err) {
       this.logger.error(err);
     }
@@ -145,5 +133,14 @@ ${getSign(buyChange)}${formatMoney(buyChange)}◦${getSign(
     )}${formatMoney(sellChange)}(${getSign(spreadChange)}${formatPercent(
       spreadChange,
     )})`;
+  }
+
+  private buildUser(msg: TelegramBot.Message): UserDto {
+    return {
+      chatId: msg.chat.id,
+      username: msg.from?.username,
+      firstName: msg.from?.first_name,
+      lastName: msg.from?.last_name,
+    };
   }
 }

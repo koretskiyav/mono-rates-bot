@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { User } from './user.model';
 import { InjectModel } from '@nestjs/sequelize';
+import { UserDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
@@ -10,8 +11,12 @@ export class UsersService {
     private userModel: typeof User,
   ) {}
 
-  async create(chatId: number) {
-    return this.userModel.create({ chatId });
+  async getOrCreate(user: UserDto) {
+    return (await this.findByChatId(user.chatId)) || (await this.create(user));
+  }
+
+  private async create(user: UserDto) {
+    return this.userModel.create({ ...user });
   }
 
   async findByChatId(chatId: number) {
