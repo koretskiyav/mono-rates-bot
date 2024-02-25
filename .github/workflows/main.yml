@@ -9,8 +9,6 @@ env:
   REGISTRY: registry.digitalocean.com/mono-rates-bot
   IMAGE_NAME: mono-rates-bot
   WORK_DIR: mono-rates-bot
-  ENV_FILE_PATH: .env
-  COMPOSE_FILE_PATH: docker-compose.prod.yaml
 
 jobs:
   test:
@@ -49,9 +47,12 @@ jobs:
           username: ${{ secrets.DEPLOY_USERNAME }}
           port: 22
           key: ${{ secrets.DEPLOY_KEY }}
-          envs: IMAGE_NAME,REGISTRY,GITHUB_SHA,WORK_DIR,COMPOSE_FILE_PATH,ENV_FILE_PATH,CONTAINER_NAME
+          envs: IMAGE_NAME,REGISTRY,GITHUB_SHA,WORK_DIR
           script: |
-            docker login -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} -p ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} $(echo $REGISTRY)
+            docker login -u ${{ secrets.DIGITALOCEAN_USERNAME }} -p ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} $(echo $REGISTRY)
 
             cd $(echo $WORK_DIR)
-            docker-compose --file $(echo $COMPOSE_FILE_PATH) --env-file --file $(echo $ENV_FILE_PATH) up -d
+            docker-compose down
+            docker rmi $(docker images -f reference=$(echo $REGISTRY)/$(echo $IMAGE_NAME) -q) -f
+            export APP_TAG=$(echo $GITHUB_SHA | head -c7)
+            docker-compose up -d
