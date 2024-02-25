@@ -9,6 +9,6 @@ You can unsubscribe from updates by using /unsubscribe command.
 
 Here are the current exchange rates:`;
 
-export const UNSUBSCRIBE_MESSAGE = `You have successfully unsubscribed from updates!
+export const UNSUBSCRIBE_MESSAGE = `You have successfully unsubscribed from updates :(
 
 To subscribe again, use /subscribe command.`;

@@ -8,15 +8,6 @@ import { BotService } from '../bot/bot.service';
 import { RateDto } from '../rates/dto/rate.dto';
 import { pairToText } from '../utils/pairToText';
 
-const TEMP_INITIAL_DATA: [string, number, number][] = [
-  ['2024-01-23 22:01:13+00', 37.42, 38.0199],
-  ['2024-01-24 08:40:06+00', 37.45, 38.0199],
-  ['2024-01-24 11:26:13+00', 37.46, 38.0199],
-  ['2024-01-24 14:56:13+00', 37.43, 38.0199],
-  ['2024-01-25 08:56:13+00', 37.45, 38.0199],
-  ['2024-01-25 12:20:06+00', 37.48, 38.0199],
-];
-
 @Injectable()
 export class TasksService {
   constructor(
@@ -24,25 +15,8 @@ export class TasksService {
     private usersService: UsersService,
     private ratesService: RatesService,
     private botService: BotService,
-  ) {
-    this.init();
-  }
+  ) {}
   private readonly logger = new Logger(TasksService.name);
-
-  async init() {
-    const last = await this.ratesService.getLast();
-    if (!last) {
-      for await (const item of TEMP_INITIAL_DATA) {
-        const [dateString, rateBuy, rateSell] = item;
-
-        await this.ratesService.add({
-          date: new Date(dateString).valueOf(),
-          rateBuy,
-          rateSell,
-        });
-      }
-    }
-  }
 
   @Cron('0 */10 * * * *')
   async handleCron() {
